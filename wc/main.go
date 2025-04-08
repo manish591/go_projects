@@ -3,88 +3,63 @@ package main
 import (
 	"flag"
 	"fmt"
-	"wc/cmd"
+	"io"
+	"os"
+	"strings"
+	"unicode/utf8"
 )
 
-const errorMessage = "Error occured while reading file"
-
 func main() {
-	countBytesFlag := flag.String("c", "", "Count number of characters")
-	countLinesFlag := flag.String("l", "", "Count number of lines")
-	countWordsFlag := flag.String("w", "", "Count number of words")
-	countCharsFlag := flag.String("m", "", "Count nunber of characters")
-
-	isFlag := false
+	byteFlag := flag.Bool("c", false, "Count number of characters")
+	lineFlag := flag.Bool("l", false, "Count number of lines")
+	wordFlag := flag.Bool("w", false, "Count number of words")
+	charFlag := flag.Bool("m", false, "Count nunber of characters")
 
 	flag.Parse()
 
-	if *countBytesFlag != "" {
-		isFlag = true
-		totatBytes, err := cmd.GetFileSizeInBytes(*countBytesFlag)
+	var fileData string
+	var filepath string
+
+	fi, _ := os.Stdin.Stat()
+
+	if fi.Mode()&os.ModeCharDevice == 0 {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			panic(err)
+		}
+		fileData = string(data)
+	} else {
+		args := flag.Args()
+
+		if len(args) > 0 {
+			filepath = args[0]
+		} else {
+			panic("Enter atleast 1 file")
+		}
+
+		fileReadData, err := os.ReadFile(filepath)
 
 		if err != nil {
-			fmt.Println(errorMessage)
-		} else {
-			fmt.Println("Total Bytes:", totatBytes)
+			panic(err)
 		}
+
+		fileData = string(fileReadData)
 	}
 
-	if *countLinesFlag != "" {
-		isFlag = true
-		totatLines, err := cmd.GetNumLinesInFile(*countLinesFlag)
+	numBytes := len(fileData)
+	numLines := len(strings.Split(string(fileData), "\n"))
+	numWords := len(strings.Fields(string(fileData)))
+	numChars := utf8.RuneCountInString(string(fileData))
 
-		if err != nil {
-			fmt.Println(errorMessage)
-		} else {
-			fmt.Println("Total Lines:", totatLines)
-		}
-	}
-
-	if *countWordsFlag != "" {
-		isFlag = true
-		totalWords, err := cmd.GetTotalWordsInFile(*countWordsFlag)
-
-		if err != nil {
-			fmt.Println(errorMessage)
-		} else {
-			fmt.Println("Total Words:", totalWords)
-		}
-	}
-
-	if *countCharsFlag != "" {
-		isFlag = true
-		totalChars, err := cmd.GetTotalCharsInFile(*countCharsFlag)
-
-		if err != nil {
-			fmt.Println(errorMessage)
-		} else {
-			fmt.Println("Total Characters:", totalChars)
-		}
-	}
-
-	if !isFlag {
-		files := flag.Args()
-
-		if len(files) > 0 {
-			filepath := files[0]
-
-			if totatBytes, err := cmd.GetFileSizeInBytes(filepath); err != nil {
-				fmt.Println(errorMessage)
-			} else {
-				fmt.Println("Total Bytes:", totatBytes)
-			}
-
-			if totatWords, err := cmd.GetTotalWordsInFile(filepath); err != nil {
-				fmt.Println(errorMessage)
-			} else {
-				fmt.Println("Total Words:", totatWords)
-			}
-
-			if totalLines, err := cmd.GetNumLinesInFile(filepath); err != nil {
-				fmt.Println(errorMessage)
-			} else {
-				fmt.Println("Total Lines:", totalLines)
-			}
-		}
+	if *byteFlag {
+		fmt.Println(numBytes)
+	} else if *lineFlag {
+		fmt.Println(numLines)
+	} else if *wordFlag {
+		fmt.Println(numWords)
+	} else if *charFlag {
+		fmt.Println(numChars)
+	} else {
+		fmt.Println(numBytes, numWords, numChars)
 	}
 }
